@@ -1,167 +1,60 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 3: Web APIs & NLP
+### Classifying Dad Jokes from Anti-Jokes
+## Problem Statement
 
-### Description
+As the world is moving forward technologically, companies are looking for more and more creative ways in order to make their product sell. Apple is in the process of trying to overhaul Siri, making the exeperience of interacting with her more immersive for the user by having her be able to better naviagate some of the nuances of spoken language. 
 
-In week four we've learned about a few different classifiers. In week five we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
+With this, Apple has made one of the projects to develop a means to better understand humor and jokes. While at the base, dad jokes and antijokes are structured in fairly similar ways, sharing some of the same hooks and relying on a differentiation in the punchline. One relies on the use of puns while the other relies on another form of misdirection and bluntness. Being able to properly differntiate between the two will be able to help Siri give a more dynamic response to consumers, helping to not only improve experience, but also to help promote Apple products through users sharing compelling interactions with Siri. 
 
-For project 3, your goal is two-fold:
-1. Using [Pushshift's](https://github.com/pushshift/api) API, you'll collect posts from two subreddits of your choosing.
-2. You'll then use NLP to train a classifier on which subreddit a given post came from. This is a binary classification problem.
+## Executive Summary
 
+We have scraped data from Reddit using the PushShift API to collect over 6000 posts from the dadjoke and antijoke subreddits. The rules and structure of these subreddits lend to help with easy classification of the two categories. 
 
-#### About the API
+We have chosen to go about modeling and fitting in a comprehensive fashion. Over 20 different types of fits are performed, with broad scanning over hyperparameters for each of the possible models. Both regularized and unregularized logistic regressions, random forests, decision trees, and naive Bayes are used as potential base models. No tokenization, stemming, and lemmatizing are tested, and after an initial test comparing count verctorization vs Tf-idf, TF-idf is used for most of the models. 
 
-Pushshift's API is fairly straightforward. For example, if I want the posts from [`/r/boardgames`](https://www.reddit.com/r/boardgames), all I have to do is use the following url: https://api.pushshift.io/reddit/search/submission?subreddit=boardgames
+After testing all of the models, we are somewhat successful in beating the baseline accuracy of around 50%, with models ranging from an accuracy of 65-74%. This however is not perfect, and in its current state, we recommend choosing a path that has a better recall (correctly guessing dadjokes as dadjokes) or specificity (correctly guessing antijokes as antijokes) to set a better stance as a company until more reliable separation can be performed. 
 
-To help you get started, we have a primer video on how to use the API: https://youtu.be/AcrjEWsMi_E
+## Workflow
+# 01_data_collection
+This is the code used to collect the subreddit information. An arbitrary time of the morning of July 30th was chosen as a start point, and posts are collected from both subreddits, 100 at a time, while actively removing duplicates. This also removes additional `[deleted]` and `[removed]` posts. Although this is common for jokes on reddit, removal was performed for ease. The data is saved at the end to not repeatedly burden Reddit servers. 
 
----
-
-### Requirements
-
-- Gather and prepare your data using the `requests` library.
-- **Create and compare at least two models**. These can be any classifier of your choosing: logistic regression, Naive Bayes, KNN, SVM, Random Forest Classifier, etc.
-  - **Bonus**: use a Naive Bayes classifier
-- A Jupyter Notebook with your analysis for a peer audience of data scientists.
-- An executive summary of your results.
-- A short presentation outlining your process and findings for a semi-technical audience.
-
-**Pro Tip:** You can find a good example executive summary [here](https://www.proposify.biz/blog/executive-summary).
-
----
-
-### Necessary Deliverables / Submission
-
-- Code and executive summary must be in a clearly commented Jupyter Notebook.
-- You must submit your slide deck.
-- Materials must be submitted by **11:59 PM PST on Friday, August 6th**.
-- Presentation must be ready by **9:15 AM PST on Friday, August 6th**.
-
----
-
-## Rubric
-Your instructors will evaluate your project (for the most part) using the following criteria.  You should make sure that you consider and/or follow most if not all of the considerations/recommendations outlined below **while** working through your project.
-
-For Project 3 the evaluation categories are as follows:<br>
-**The Data Science Process**
-- Problem Statement
-- Data Collection
-- Data Cleaning & EDA
-- Preprocessing & Modeling
-- Evaluation and Conceptual Understanding
-- Conclusion and Recommendations
-
-**Organization and Professionalism**
-- Organization
-- Visualizations
-- Python Syntax and Control Flow
-- Presentation
-
-**Scores will be out of 30 points based on the 10 categories in the rubric.** <br>
-*3 points per section*<br>
-
-| Score | Interpretation |
-| --- | --- |
-| **0** | *Project fails to meet the minimum requirements for this item.* |
-| **1** | *Project meets the minimum requirements for this item, but falls significantly short of portfolio-ready expectations.* |
-| **2** | *Project exceeds the minimum requirements for this item, but falls short of portfolio-ready expectations.* |
-| **3** | *Project meets or exceeds portfolio-ready expectations; demonstrates a thorough understanding of every outlined consideration.* |
+# 02_cleaning_and_eda
+Cleaning, feature engineering, and EDA are performed. First features are engineered,and potential custom stop words are performed. A hard set of stop words that giveaway subreddits are removed, and protential stopwords are added from English, and overlap between the two in words in common between the top 50 and top 100 most frequent words for each subreddit. Interesting cases show up (dad,son,pink,building). Some are from specific instances (pink) while some are from are give aways to the sub (Dad or son for dadjokes). 
+<img src="images/top20dad.png">
 
 
-### The Data Science Process
+Engineered features are as follows:
+ - Add binary `dad` column for whether or not it is from r/dadjokes
+ - Add two additional text columns with words stemmed and lemmatized
+ - Add sentiment scoers
+ - Add `after_isare` to signify jokes that have punchline partially in hook
 
-**Problem Statement**
-- Is it clear what the goal of the project is?
-- What type of model will be developed?
-- How will success be evaluated?
-- Is the scope of the project appropriate?
-- Is it clear who cares about this or why this is important to investigate?
-- Does the student consider the audience and the primary and secondary stakeholders?
+# 03_modeling_and_results
 
-**Data Collection**
-- Was enough data gathered to generate a significant result?
-- Was data collected that was useful and relevant to the project?
-- Was data collection and storage optimized through custom functions, pipelines, and/or automation?
-- Was thought given to the server receiving the requests such as considering number of requests per second?
+Ultimately, in the model testing, six sets of stop words are tested. All include a small subset of give aways, while the other six are standard english, top 50, top 100, english + top50, and english + top100 where top50/top100 are overlapping words contained in the top 50/100 words for each sub. These top lists have english stop words pre removed. 
 
-**Data Cleaning and EDA**
-- Are missing values imputed/handled appropriately?
-- Are distributions examined and described?
-- Are outliers identified and addressed?
-- Are appropriate summary statistics provided?
-- Are steps taken during data cleaning and EDA framed appropriately?
-- Does the student address whether or not they are likely to be able to answer their problem statement with the provided data given what they've discovered during EDA?
+Five pipelines are made, with the best results from full gridsearches used. Commented out include the final set of parameters searched for each fit type. The five pipelines correspond to CountVectoriezer/Naive Bayes, Tfidf/NaiveBayes, Tfidf/Logistic Regression, Tfidf/DecisionTree, and Tfidf/RandomForest. Each pipeline is then applied to each of tokenization set (none, Lemmatizing, stemming). Initial tuning for each pipeline was only performed on the none tokenized set. 
 
-**Preprocessing and Modeling**
-- Is text data successfully converted to a matrix representation?
-- Are methods such as stop words, stemming, and lemmatization explored?
-- Does the student properly split and/or sample the data for validation/training purposes?
-- Does the student test and evaluate a variety of models to identify a production algorithm (**AT MINIMUM:** two classification models, **BONUS:** try a Naive Bayes)?
-- Does the student defend their choice of production model relevant to the data at hand and the problem?
-- Does the student explain how the model works and evaluate its performance successes/downfalls?
+Finally, a LassoLR and RidgeLR were applied to all three tokenized sets. C values were searched over, and the engineered columns were added. Engineered columns weren't used in other instances because I didn't know how to properly incororate them to the pipeline. Limitations to the Lasso and Ridge fits are computer memory that were not encountered in pipline fitting. This is an area for further study. 
 
-**Evaluation and Conceptual Understanding**
-- Does the student accurately identify and explain the baseline score?
-- Does the student select and use metrics relevant to the problem objective?
-- Does the student interpret the results of their model for purposes of inference?
-- Is domain knowledge demonstrated when interpreting results?
-- Does the student provide appropriate interpretation with regards to descriptive and inferential statistics?
+## Conclusions and Recommendations
 
-**Conclusion and Recommendations**
-- Does the student provide appropriate context to connect individual steps back to the overall project?
-- Is it clear how the final recommendations were reached?
-- Are the conclusions/recommendations clearly stated?
-- Does the conclusion answer the original problem statement?
-- Does the student address how findings of this research can be applied for the benefit of stakeholders?
-- Are future steps to move the project forward identified?
+Our model peaks at around 74% accuracy for all unregularized Logistic Regression models, which beats the baseline of ~50%. Depending on corporate goals on the use of this power by Siri, models with similar accuaracy scores and better recall/specificity can be chosen to better categorize a specific type of joke. These peak at a recall score of 84% and specificity of 78% which can be used in the interim until better methods are developed. 
+
+ - No token, Logisitic regression (Best Accuracy)
+ <img src="images/gslr.png">
+ - No token, Naive Bayes (Highest Specificity)
+ <img src="images/gstf.png">
+ -Porter Stem, Random Forest (Highest Recall)
+ <img src="images/gsrf_port.png">
+
+## Sources
+- [r/AntiJokes](https://reddit.com/r/AntiJokes)
+- [r/dadjokes](https://reddit.com/r/DadJokes)
+- [PushShift](https://github.com/pushshift/api)
 
 
-### Organization and Professionalism
-
-**Project Organization**
-- Are modules imported correctly (using appropriate aliases)?
-- Are data imported/saved using relative paths?
-- Does the README provide a good executive summary of the project?
-- Is markdown formatting used appropriately to structure notebooks?
-- Are there an appropriate amount of comments to support the code?
-- Are files & directories organized correctly?
-- Are there unnecessary files included?
-- Do files and directories have well-structured, appropriate, consistent names?
-
-**Visualizations**
-- Are sufficient visualizations provided?
-- Do plots accurately demonstrate valid relationships?
-- Are plots labeled properly?
-- Are plots interpreted appropriately?
-- Are plots formatted and scaled appropriately for inclusion in a notebook-based technical report?
-
-**Python Syntax and Control Flow**
-- Is care taken to write human readable code?
-- Is the code syntactically correct (no runtime errors)?
-- Does the code generate desired results (logically correct)?
-- Does the code follows general best practices and style guidelines?
-- Are Pandas functions used appropriately?
-- Are `sklearn` and `NLTK` methods used appropriately?
-
-**Presentation**
-- Is the problem statement clearly presented?
-- Does a strong narrative run through the presentation building toward a final conclusion?
-- Are the conclusions/recommendations clearly stated?
-- Is the level of technicality appropriate for the intended audience?
-- Is the student substantially over or under time?
-- Does the student appropriately pace their presentation?
-- Does the student deliver their message with clarity and volume?
-- Are appropriate visualizations generated for the intended audience?
-- Are visualizations necessary and useful for supporting conclusions/explaining findings?
 
 
----
 
-### Why did we choose this project for you?
-This project covers three of the biggest concepts we cover in the class: Classification Modeling, Natural Language Processing and Data Wrangling/Acquisition.
 
-Part 1 of the project focuses on **Data wrangling/gathering/acquisition**. This is a very important skill as not all the data you will need will be in clean CSVs or a single table in SQL.  There is a good chance that wherever you land you will have to gather some data from some unstructured/semi-structured sources; when possible, requesting information from an API, but often scraping it because they don't have an API (or it's terribly documented).
 
-Part 2 of the project focuses on **Natural Language Processing** and converting standard text data (like Titles and Comments) into a format that allows us to analyze it and use it in modeling.
-
-Part 3 of the project focuses on **Classification Modeling**.  Given that project 2 was a regression focused problem, we needed to give you a classification focused problem to practice the various models, means of assessment and preprocessing associated with classification.   
